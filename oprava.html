@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Budovy</title>
+  <style>
+    body {
+      background: #f6f1e7;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #332;
+      color: #fff;
+      padding: 10px 30px;
+      font-size: 22px;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    .resources {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      background: #e3dcc9;
+      padding: 12px 0 8px 0;
+      font-size: 19px;
+      font-weight: bold;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      background: #d5cab3;
+      padding: 10px 0;
+    }
+    .tabs button {
+      background: #fff3e2;
+      border: 2px solid #998b71;
+      border-radius: 8px;
+      padding: 7px 22px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .tabs button.active {
+      background: #ffd595;
+      border-color: #7c6535;
+      color: #453208;
+      font-weight: bold;
+    }
+    .tab-content { display: none; max-width: 700px; margin: 18px auto; }
+    .tab-content.active { display: block; }
+    .building-list, .army-list, .research-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      justify-content: center;
+    }
+    .building-card, .unit-card, .research-card {
+      background: #fff;
+      border-radius: 11px;
+      box-shadow: 0 2px 10px #0002;
+      padding: 18px 18px 10px 18px;
+      width: 210px;
+      min-height: 130px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: box-shadow 0.18s;
+    }
+    .building-card.inactive, .unit-card.inactive, .research-card.inactive {
+      opacity: 0.55;
+      filter: grayscale(0.7);
+    }
+    .icon {
+      font-size: 38px;
+      margin-bottom: 8px;
+    }
+    .details {
+      width: 100%;
+      text-align: center;
+    }
+    .title {
+      font-size: 21px;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .level, .timer {
+      font-size: 16px;
+      margin-bottom: 3px;
+    }
+    .btn {
+      background: #f9cf6c;
+      color: #332;
+      border: 1px solid #a48639;
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 17px;
+      margin: 6px 0;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:disabled {
+      background: #e0e0e0;
+      color: #888;
+      cursor: not-allowed;
+    }
+    #speedUpStatus {
+      text-align: center;
+      margin: 10px 0 0 0;
+      color: #795c02;
+      font-weight: bold;
+      min-height: 20px;
+    }
+    .army-unit {
+      display: flex;
+      align-items: center;
+      background: #fff7e2;
+      border-radius: 8px;
+      padding: 8px 15px;
+      margin-bottom: 5px;
+      font-size: 18px;
+    }
+    .army-unit .icon { margin: 0 7px 0 0; }
+    .army-unit .count { margin-left: auto; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>Budovy</header>
+  <div class="resources">
+    <div>Dřevo: <span id="wood">0</span></div>
+    <div>Hlína: <span id="clay">0</span></div>
+    <div>Železo: <span id="iron">0</span></div>
+    <div>Obilí: <span id="grain">0</span></div>
+    <div style="margin-left:25px;">
+      <span style="color:#f0c442;">&#11044; Zlaté: <span id="tokens">0</span></span>
+      <button id="addTokensBtn" class="btn" style="padding:2px 8px; font-size:15px;">Přidat</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="active" data-tab="buildings">Budovy</button>
+    <button data-tab="academy">Akademie</button>
+    <button data-tab="rally">Shromaždiště</button>
+  </div>
+
+  <div id="speedUpStatus"></div>
+
+  <div id="tab-buildings" class="tab-content active"></div>
+  <div id="tab-academy" class="tab-content"></div>
+  <div id="tab-rally" class="tab-content"></div>
+
+  <script>
+    // --- Data ---
+    let floatResources = { wood: 500, clay: 500, iron: 500, grain: 500 };
+    let tokens = 100;
+
+    const productionByLevel = {
+      1: 0,
+      2: 50,
+      3: 150,
+      4: 300,
+      5: 500,
+      6: 800,
+      7: 1200,
+      8: 1700,
+      9: 2300,
+      10: 3000
+    };
+
+    const buildingsList = [
+      { id: 'main', name: "Hlavní budova", icon: "🏰" },
+      { id: 'granary', name: "Sýpka", icon: "🌾" },
+      { id: 'warehouse', name: "Sklad", icon: "🏠" },
+      { id: 'barracks', name: "Kasárna", icon: "🪖" },
+      { id: 'rally', name: "Shromaždiště", icon: "🛡️" },
+      { id: 'stable', name: "Stáje", icon: "🐴" },
+      { id: 'workshop', name: "Dílna", icon: "🔧" },
+      { id: 'academy', name: "Akademie", icon: "🎓" },
+      { id: 'market', name: "Tržnice", icon: "🏪" }
+    ];
+
+    const baseCostsBuildings = {
+      main:   { wood: 100, clay: 80, iron: 90, grain: 70, time: 20 },
+      granary:{ wood: 60, clay: 40, iron: 50, grain: 30, time: 10 },
+      warehouse:{ wood: 70, clay: 50, iron: 60, grain: 40, time: 10 },
+      barracks:{ wood: 150, clay: 130, iron: 120, grain: 110, time: 30 },
+      rally:  { wood: 120, clay: 100, iron: 90, grain: 80, time: 25 },
+      stable: { wood: 160, clay: 140, iron: 130, grain: 120, time: 35 },
+      workshop:{ wood: 200, clay: 180, iron: 170, grain: 150, time: 40 },
+      academy:{ wood: 220, clay: 200, iron: 180, grain: 170, time: 45 },
+      market: { wood: 100, clay: 90, iron: 80, grain: 70, time: 15 }
+    };
+
+    // --- Výzkumy v akademii ---
+    const researchList = [
+      { id: 'sekyrnik', name: 'Výzkum Sekyrníka', time: 5, buildingReq: 5, buildingId: 'academy' },
+      { id: 'ostepar', name: 'Výzkum Ostepara', time: 6, buildingReq: 5, buildingId: 'academy' },
+      { id: 'kun_tueton', name: 'Výzkum Kůň Tueton', time: 10, buildingReq: 10, buildingId: 'academy' },
+      { id: 'rytíř', name: 'Výzkum Rytíře', time: 12, buildingReq: 10, buildingId: 'academy' }
+    ];
+
+    // --- Data z localStorage ---
+    let buildingData = {};
+    let researchData = {};
+    let researchQueue = {};
+
+    // --- Uložení/Načtení hry ---
+    function saveGame() {
+      localStorage.setItem('buildingData', JSON.stringify(buildingData));
+      localStorage.setItem('researchData', JSON.stringify(researchData));
+      localStorage.setItem('researchQueue', JSON.stringify(researchQueue));
+      localStorage.setItem('tokens', tokens);
+      localStorage.setItem('resources', JSON.stringify(floatResources));
+    }
+    function loadGame() {
+      const bData = localStorage.getItem('buildingData');
+      const rData = localStorage.getItem('researchData');
+      const resQ = localStorage.getItem('researchQueue');
+      const rTokens = localStorage.getItem('tokens');
+      const rRes = localStorage.getItem('resources');
+
+      buildingData = bData ? JSON.parse(bData) : {};
+      researchData = rData ? JSON.parse(rData) : {};
+      researchQueue = resQ ? JSON.parse(resQ) : {};
+      tokens = rTokens !== null ? parseInt(rTokens) : 100;
+      floatResources = rRes ? JSON.parse(rRes) : { wood: 500, clay: 500, iron: 500, grain: 500 };
+
+      buildingsList.forEach(b => {
+        if (!buildingData[b.id]) {
+          buildingData[b.id] = { level: b.id === 'main' ? 1 : 0, built: b.id === 'main', upgrading: false, upgradeEnd: null };
+        }
+      });
+
+      researchList.forEach(r => {
+        if (researchData[r.id] === undefined) researchData[r.id] = false;
+        if (researchQueue[r.id] === undefined) researchQueue[r.id] = null;
+      });
+    }
+
+    // --- Aktualizace zdrojů ---
+    function updateResourcesDisplay() {
+      const baseCap = 2000;
+      const warehouseLvl = buildingData.warehouse?.level || 0;
+      const granaryLvl = buildingData.granary?.level || 0;
+      const woodCap = baseCap + warehouseLvl * 2000;
+      const clayCap = baseCap + warehouseLvl * 2000;
+      const ironCap = baseCap + warehouseLvl * 2000;
+      const grainCap = baseCap + granaryLvl * 2000;
+      document.getElementById('wood').textContent = Math.floor(floatResources.wood);
+      document.getElementById('clay').textContent = Math.floor(floatResources.clay);
+      document.getElementById('iron').textContent = Math.floor(floatResources.iron);
+      document.getElementById('grain').textContent = Math.floor(floatResources.grain);
+    }
+
+    // --- Aktualizace tokenů ---
+    function updateTokensDisplay() {
+      document.getElementById('tokens').textContent = tokens;
+    }
+
+    // --- Časovač ---
+    function formatTime(ms) {
+      if (ms <= 0) return "0:00";
+      const totalSec = Math.ceil(ms / 1000);
+      const min = Math.floor(totalSec / 60);
+      const sec = totalSec % 60;
+      return `${min}:${sec.toString().padStart(2,"0")}`;
+    }
+
+    // --- Výpočet ceny upgradu ---
+    function calculateBuildingCost(level, id) {
+      const base = baseCostsBuildings[id];
+      const multiplier = level + 1;
+      return {
+        wood: base.wood * multiplier,
+        clay: base.clay * multiplier,
+        iron: base.iron * multiplier,
+        grain: base.grain * multiplier,
+        time: base.time * multiplier
+      };
+    }
+
+    // --- Urychlení všech staveb ---
+    function speedUpBuildings() {
+      const now = Date.now();
+      const upgradingBuildings = Object.entries(buildingData).filter(([id, b]) => b.upgrading && b.upgradeEnd > now);
+      if (upgradingBuildings.length === 0) {
+        alert("Žádné probíhající stavby k urychlení.");
+        return;
+      }
+      const costPerBuilding = 20;
+      const totalCost = upgradingBuildings.length * costPerBuilding;
+      if (tokens < totalCost) {
+        alert(`Nemáš dostatek tokenů. Potřebuješ ${totalCost} tokenů, máš ${tokens}.`);
+        return;
+      }
+      tokens -= totalCost;
+      upgradingBuildings.forEach(([id, b]) => {
+        b.level++;
+        b.upgrading = false;
+        b.upgradeEnd = null;
+      });
+      saveGame();
+      renderBuildings();
+      updateResourcesDisplay();
+      updateTokensDisplay();
+      document.getElementById('speedUpStatus').textContent = `Urychleno ${upgradingBuildings.length} staveb za ${totalCost} tokenů.`;
+      setTimeout(() => { document.getElementById('speedUpStatus').textContent = ''; }, 4000);
+    }
+
+    // --- Odemčení budovy ---
+    function isUnlockedBuilding(id) {
+      if (id === 'granary' || id === 'warehouse') return buildingData.main && buildingData.main.level >= 3;
+      if (id === 'barracks') return buildingData.main && buildingData.main.level >= 5;
+      if (id === 'academy') return buildingData.barracks && buildingData.barracks.level >= 3;
+      if (id === 'stable') return buildingData.barracks && buildingData.barracks.level >= 5;
+      return true;
+    }
+
+    // --- Vykreslení budov ---
+    function renderBuildings() {
+      const container = document.getElementById('tab-buildings');
+      container.innerHTML = '<h2>Seznam budov</h2><div class="building-list"></div><button class="btn" style="margin:10px 0 0 0;" onclick="speedUpBuildings()">Urychlit stavby za zlato</button>';
+      const list = container.querySelector('.building-list');
+      buildingsList.forEach(b => {
+        const data = buildingData[b.id];
+        const unlocked = isUnlockedBuilding(b.id);
+        const div = document.createElement('div');
+        div.className = 'building-card' + (unlocked ? '' : ' inactive');
+        if (data && data.upgrading) div.classList.add('inactive');
+        const icon = document.createElement('div');
+        icon.className = 'icon'; icon.textContent = b.icon;
+        const details = document.createElement('div');
+        details.className = 'details';
+        const title = document.createElement('div');
+        title.className = 'title'; title.textContent = b.name;
+        const level = document.createElement('div');
+        level.className = 'level';
+        level.textContent = data && data.level > 0 ? `Úroveň: ${data.level}` : "Nepostaveno";
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.textContent = data && data.upgrading ? "Upgraduje se..." : "Vylepšit";
+        if (!unlocked) {
+          div.classList.add('inactive');
+          btn.disabled = true;
+        } else {
+          div.classList.remove('inactive');
+          btn.disabled = false;
+        }
+        btn.onclick = () => startBuildingUpgrade(b.id);
+        const timer = document.createElement('div');
+        timer.className = 'timer';
+        if (data && data.upgrading && data.upgradeEnd) {
+          timer.textContent = "Zbývá: " + formatTime(data.upgradeEnd - Date.now());
+        }
+        details.appendChild(title);
+        details.appendChild(level);
+        details.appendChild(btn);
+        details.appendChild(timer);
+        div.appendChild(icon);
+        div.appendChild(details);
+        list.appendChild(div);
+      });
+    }
+
+    // --- Spuštění upgradu budovy ---
+    function startBuildingUpgrade(id) {
+      const data = buildingData[id];
+      if (data.upgrading) {
+        if ((id === 'granary' || id === 'warehouse') && buildingData.main.level < 3) {
+          alert("Musíš mít hlavní budovu na levelu 3.");
+          return;
+        }
+        alert("Budova se již vylepšuje.");
+        return;
+      }
+      const cost = calculateBuildingCost(data.level, id);
+      if (
+        floatResources.wood < cost.wood ||
+        floatResources.clay < cost.clay ||
+        floatResources.iron < cost.iron ||
+        floatResources.grain < cost.grain
+      ) {
+        alert("Nemáš dostatek zdrojů na vylepšení.");
+        return;
+      }
+      floatResources.wood -= cost.wood;
+      floatResources.clay -= cost.clay;
+      floatResources.iron -= cost.iron;
+      floatResources.grain -= cost.grain;
+      updateResourcesDisplay();
+      const durationMs = cost.time * 60 * 1000;
+      data.upgrading = true;
+      data.upgradeEnd = Date.now() + durationMs;
+      saveGame();
+      renderBuildings();
+    }
+
+    // --- Výzkum ---
+    function isResearchUnlocked(research) {
+      const building = buildingData[research.buildingId];
+      if (!building) return false;
+      return building.level >= research.buildingReq;
+    }
+    function renderResearch() {
+      const container = document.getElementById('tab-academy');
+      container.innerHTML = '<h2>Výzkum jednotek</h2><div class="research-list"></div>';
+      const list = container.querySelector('.research-list');
+      researchList.forEach(r => {
+        const unlocked = isResearchUnlocked(r);
+        const researched = researchData[r.id] || false;
+        const inProgress = researchQueue[r.id] && researchQueue[r.id] > Date.now();
+
+        const div = document.createElement('div');
+        div.className = 'research-card' + (unlocked ? '' : ' inactive');
+
+        const icon = document.createElement('div');
+        icon.className = 'icon';
+        icon.textContent = '🔬';
+
+        const details = document.createElement('div');
+        details.className = 'details';
+
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = r.name;
+
+        const req = document.createElement('div');
+        req.textContent = `Vyžaduje: Akademie level ${r.buildingReq}`;
+
+        const status = document.createElement('div');
+        status.className = 'timer';
+
+        if (researched) {
+          status.textContent = 'Výzkum dokončen';
+        } else if (inProgress) {
+          status.textContent = 'Výzkum probíhá: ' + formatTime(researchQueue[r.id] - Date.now());
+        } else if (!unlocked) {
+          status.textContent = 'Zamčeno';
+        } else {
+          status.textContent = '';
+        }
+
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.textContent = researched ? 'Dokončeno' : (inProgress ? 'Výzkum probíhá' : 'Začít výzkum');
+        btn.disabled = researched || inProgress || !unlocked;
+        btn.onclick = () => startResearch(r.id);
+
+        details.appendChild(title);
+        details.appendChild(req);
+        details.appendChild(status);
+        details.appendChild(btn);
+
+        div.appendChild(icon);
+        div.appendChild(details);
+
+        list.appendChild(div);
+      });
+    }
+
+    function startResearch(researchId) {
+      if (researchQueue[researchId] && researchQueue[researchId] > Date.now()) {
+        alert('Výzkum už probíhá.');
+        return;
+      }
+      const r = researchList.find(r => r.id === researchId);
+      if (!r) return;
+      const duration = r.time * 60 * 1000;
+      researchQueue[researchId] = Date.now() + duration;
+      saveGame();
+      renderResearch();
+    }
+
+    function processResearchQueue() {
+      let changed = false;
+      const now = Date.now();
+      for (const researchId in researchQueue) {
+        const endTime = researchQueue[researchId];
+        if (endTime && endTime <= now) {
+          researchData[researchId] = true;
+          researchQueue[researchId] = null;
+          changed = true;
+        }
+      }
+      if (changed) {
+        saveGame();
+        renderResearch();
+      }
+    }
+
+    // --- Shromaždiště (zatím pouze placeholder) ---
+    function renderRally() {
+      const container = document.getElementById('tab-rally');
+      container.innerHTML = '<h2>Shromaždiště</h2><div style="text-align:center;opacity:.7">Zde bude později přehled armády.</div>';
+    }
+
+    // --- Tab switching ---
+    const tabs = document.querySelectorAll('#tabs button');
+    let currentTab = 'buildings';
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+        showTab(currentTab);
+      });
+    });
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      const el = document.getElementById('tab-' + tab);
+      if (el) el.classList.add('active');
+      if (tab === 'buildings') renderBuildings();
+      if (tab === 'academy') renderResearch();
+      if (tab === 'rally') renderRally();
+    }
+
+    // --- Časovače, fronty ---
+    function updateTimers() {
+      const now = Date.now();
+
+      // Dokončení staveb budov
+      let buildingsChanged = false;
+      for (const id in buildingData) {
+        const b = buildingData[id];
+        if (b.upgrading && b.upgradeEnd <= now) {
+          b.level++;
+          b.upgrading = false;
+          b.upgradeEnd = null;
+          if (!b.built) b.built = true;
+          buildingsChanged = true;
+        }
+      }
+      if (buildingsChanged) {
+        saveGame();
+        if(currentTab==='buildings') renderBuildings();
+        updateResourcesDisplay();
+      }
+
+      // Výzkumy
+      processResearchQueue();
+
+      // Aktualizace UI dle záložky
+      if (currentTab === 'buildings') renderBuildings();
+      if (currentTab === 'academy') renderResearch();
+      if (currentTab === 'rally') renderRally();
+
+      updateTokensDisplay();
+    }
+
+    // --- Inicializace ---
+    function init() {
+      loadGame();
+      updateResourcesDisplay();
+      updateTokensDisplay();
+      showTab(currentTab);
+      setInterval(() => {
+        updateTimers();
+      }, 1000);
+    }
+    init();
+
+    // --- Přidání tokenů ---
+    window.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('addTokensBtn').addEventListener('click', function () {
+        const enteredPassword = prompt("Zadej heslo pro přidání zlatých:");
+        if (enteredPassword === '1111') {
+          const additionalTokens = 100;
+          tokens += additionalTokens;
+          updateTokensDisplay();
+          saveGame();
+          alert(`Přidáno ${additionalTokens} zlatých! Máte ${tokens} tokenů.`);
+        } else {
+          alert("❌ Špatné heslo. Zlato nebylo přidáno.");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
