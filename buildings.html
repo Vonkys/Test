@@ -600,85 +600,23 @@ data.upgradeEnd = Date.now() + durationMs;
         }
       });
       // Inicializace
-      loadGame();
+         loadGame();
       updateResourcesDisplay();
       updateProduction();
       updateTokensDisplay();
       renderBuildings();
+
       setInterval(updateTimers, 1000);
       setInterval(() => {
-      floatResources.wood += production.wood / 3600;
-      floatResources.clay += production.clay / 3600;
-      floatResources.iron += production.iron / 3600;
-      floatResources.grain += production.grain / 3600;
+        floatResources.wood += production.wood / 3600;
+        floatResources.clay += production.clay / 3600;
+        floatResources.iron += production.iron / 3600;
+        floatResources.grain += production.grain / 3600;
 
-  updateResourcesDisplay();
-  saveGame();
-}, 1000);
-
+        updateResourcesDisplay();
+        saveGame();
+      }, 1000);
     });
   </script>
-
-<script>
-setInterval(() => {
-  const productionByLevel = {
-    1: 0,
-    2: 50,
-    3: 150,
-    4: 300,
-    5: 500,
-    6: 800,
-    7: 1200,
-    8: 1700,
-    9: 2300,
-    10: 3000
-  };
-
-  const floatResources = JSON.parse(localStorage.getItem("resources") || '{"wood":0,"clay":0,"iron":0,"grain":0}');
-  const fields = JSON.parse(localStorage.getItem("fields") || "[]");
-  const production = { wood: 0, clay: 0, iron: 0, grain: 0 };
-
-  for (const field of fields) {
-    const amount = productionByLevel[field.level] || 0;
-    production[field.type] += amount;
-  }
-
-  floatResources.wood += production.wood / 3600;
-  floatResources.clay += production.clay / 3600;
-  floatResources.iron += production.iron / 3600;
-  floatResources.grain += production.grain / 3600;
-
-  localStorage.setItem("resources", JSON.stringify(floatResources));
-}, 1000);
-</script>
-
-
-<script>
-function updateResourcesDisplay() {
-  const stored = JSON.parse(localStorage.getItem("resources") || "{}");
-  if (!stored) return;
-
-  const baseCap = 2000;
-  const warehouseLvl = buildingData?.warehouse?.level || 0;
-  const granaryLvl = buildingData?.granary?.level || 0;
-  const woodCap = baseCap + warehouseLvl * 2000;
-  const clayCap = baseCap + warehouseLvl * 2000;
-  const ironCap = baseCap + warehouseLvl * 2000;
-  const grainCap = baseCap + granaryLvl * 2000;
-
-  document.getElementById("wood").parentElement.innerHTML =
-    `Dřevo: <span id="wood">${Math.floor(stored.wood || 0)}</span>/${woodCap}`;
-  document.getElementById("clay").parentElement.innerHTML =
-    `Hlína: <span id="clay">${Math.floor(stored.clay || 0)}</span>/${clayCap}`;
-  document.getElementById("iron").parentElement.innerHTML =
-    `Železo: <span id="iron">${Math.floor(stored.iron || 0)}</span>/${ironCap}`;
-  document.getElementById("grain").parentElement.innerHTML =
-    `Obilí: <span id="grain">${Math.floor(stored.grain || 0)}</span>/${grainCap}`;
-}
-
-// Spustí opakovanou aktualizaci surovin z localStorage
-setInterval(updateResourcesDisplay, 1000);
-</script>
-
 </body>
 </html>
