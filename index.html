@@ -836,6 +836,10 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+    window.addEventListener("beforeunload", () => {
+  saveGame();
+});
+
 
   </script>
 </body>
