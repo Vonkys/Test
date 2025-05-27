@@ -355,7 +355,12 @@
   // >>> Přidej tento řádek <<<
   localStorage.setItem('lastVisit', Date.now());
 }
-
+function getBuildSpeedModifier() {
+  const buildingData = JSON.parse(localStorage.getItem("buildingData")) || [];
+  const main = buildingData.find(b => b.type === "Hlavní budova");
+  const level = main ? main.level : 0;
+  return 1 - level * 0.05;
+}
 
 function loadGame() {
   const savedResources = localStorage.getItem("resources");
@@ -618,9 +623,8 @@ function loadGame() {
         resources.iron = Math.floor(floatResources.iron);
         resources.grain = Math.floor(floatResources.grain);
 
-        const duration = upgradeDuration(data.level);
-
-        data.upgradeEndTime = Date.now() + duration;
+        const duration = upgradeDuration(data.level) * getBuildSpeedModifier();
+         data.upgradeEndTime = Date.now() + duration;
 
         updateResources();
         updateFieldIcons();
