@@ -623,7 +623,13 @@ function loadGame() {
         resources.grain = Math.floor(floatResources.grain);
 
         const duration = upgradeDuration(data.level) * getBuildSpeedModifier();
-         data.upgradeEndTime = Date.now() + duration;
+
+if (!Number.isFinite(duration)) {
+  alert("Chyba: čas upgradu je neplatný.");
+  return;
+}
+
+data.upgradeEndTime = Date.now() + duration;
 
         updateResources();
         updateFieldIcons();
