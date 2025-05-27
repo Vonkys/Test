@@ -510,9 +510,15 @@
       payCost(cost);
       updateResourcesDisplay();
       const speed = getSpeedMultiplier();
-      const durationMs = (cost.time * 60 * 1000) / speed;
-      data.upgrading = true;
-      data.upgradeEnd = Date.now() + durationMs;
+const durationMs = (cost.time * 60 * 1000) / speed;
+
+if (!Number.isFinite(durationMs)) {
+  alert("Chyba: neplatný čas výstavby budovy.");
+  return;
+}
+
+data.upgrading = true;
+data.upgradeEnd = Date.now() + durationMs;
       saveGame();
       renderBuildings();
     }
