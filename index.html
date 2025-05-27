@@ -354,14 +354,13 @@
 
   // >>> Přidej tento řádek <<<
   localStorage.setItem('lastVisit', Date.now());
-}
+    }
 function getBuildSpeedModifier() {
   const buildingData = JSON.parse(localStorage.getItem("buildingData")) || [];
   const main = buildingData.find(b => b.type === "Hlavní budova");
-  const level = main ? main.level : 0;
+  const level = main && Number.isFinite(main.level) ? main.level : 0;
   return 1 - level * 0.05;
 }
-
 function loadGame() {
   const savedResources = localStorage.getItem("resources");
   
