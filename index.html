@@ -659,10 +659,10 @@ function getBuildSpeedModifier() {
     }
 
     function updateProduction() {
-      production.wood = 0;
-      production.clay = 0;
-      production.iron = 0;
-      production.grain = 0;
+      production.wood = 10000;
+      production.clay = 10000;
+      production.iron = 10000;
+      production.grain = 10000;
       for (const data of fieldsData) {
         production[data.type] += productionByLevel[data.level] || 0;
       }
