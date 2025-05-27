@@ -428,13 +428,13 @@ if (!buildingData) buildingData = {};
 function getStorageCapacity() {
   const warehouse = buildingData["Sklad"];
   const level = warehouse ? warehouse.level : 0;
-  return 800 + level * 1200;
+  return 4000 + level * 1200;
 }
 
 function getGranaryCapacity() {
   const granary = buildingData["Sýpka"];
   const level = granary ? granary.level : 0;
-  return 800 + level * 1200;
+  return 4000 + level * 1200;
 }
     
     function formatTime(ms) {
