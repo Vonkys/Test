@@ -384,19 +384,30 @@
       const sec = totalSec % 60;
       return `${min}:${sec.toString().padStart(2, "0")}`;
     }
-    function updateResourcesDisplay() {
-      const baseCap = 2000;
-      const warehouseLvl = buildingData.warehouse?.level || 0;
-      const granaryLvl = buildingData.granary?.level || 0;
-      const woodCap = baseCap + warehouseLvl * 2000;
-      const clayCap = baseCap + warehouseLvl * 2000;
-      const ironCap = baseCap + warehouseLvl * 2000;
-      const grainCap = baseCap + granaryLvl * 2000;
-      document.getElementById('wood').textContent = Math.floor(floatResources.wood);
-      document.getElementById('clay').textContent = Math.floor(floatResources.clay);
-      document.getElementById('iron').textContent = Math.floor(floatResources.iron);
-      document.getElementById('grain').textContent = Math.floor(floatResources.grain);
-    }
+    
+  function updateProduction() {
+  production = {
+    wood: 100,
+    clay: 100,
+    iron: 100,
+    grain: 100
+  };
+}
+
+  function updateResourcesDisplay() {
+  const warehouseLvl = buildingData["Sklad"]?.level || 0;
+  const granaryLvl = buildingData["Sýpka"]?.level || 0;
+  const woodCap = 3000 + warehouseLvl * 1200;
+  const clayCap = 3000 + warehouseLvl * 1200;
+  const ironCap = 3000 + warehouseLvl * 1200;
+  const grainCap = 3000 + granaryLvl * 1200;
+
+  document.getElementById('wood').textContent = Math.floor(floatResources.wood);
+  document.getElementById('clay').textContent = Math.floor(floatResources.clay);
+  document.getElementById('iron').textContent = Math.floor(floatResources.iron);
+  document.getElementById('grain').textContent = Math.floor(floatResources.grain);
+}
+
     function updateTokensDisplay() {
       document.getElementById('tokens').textContent = tokens;
     }
