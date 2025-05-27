@@ -836,8 +836,9 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-    window.addEventListener("beforeunload", () => {
+   window.addEventListener("beforeunload", () => {
   saveGame();
+  localStorage.setItem("lastvisit", Date.now()); // >>> nutné pro offline produkci
 });
 
 
