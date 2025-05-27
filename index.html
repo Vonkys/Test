@@ -425,7 +425,19 @@
 }
 if (!buildingData) buildingData = {};   
     
- function formatTime(ms) {
+function getStorageCapacity() {
+  const warehouse = buildingData["Sklad"];
+  const level = warehouse ? warehouse.level : 0;
+  return 800 + level * 1200;
+}
+
+function getGranaryCapacity() {
+  const granary = buildingData["Sýpka"];
+  const level = granary ? granary.level : 0;
+  return 800 + level * 1200;
+}
+    
+    function formatTime(ms) {
       if (ms <= 0) return "";
       const totalSec = Math.ceil(ms / 1000);
       const min = Math.floor(totalSec / 60);
@@ -648,10 +660,10 @@ function getBuildSpeedModifier() {
     }
 
     function updateResources() {
-      resources.wood = Math.floor(floatResources.wood);
-      resources.clay = Math.floor(floatResources.clay);
-      resources.iron = Math.floor(floatResources.iron);
-      resources.grain = Math.floor(floatResources.grain);
+      resources.wood = Math.min(Math.floor(floatResources.wood), getStorageCapacity());
+      resources.clay = Math.min(Math.floor(floatResources.clay), getStorageCapacity());
+      resources.iron = Math.min(Math.floor(floatResources.iron), getStorageCapacity());
+      resources.grain = Math.min(Math.floor(floatResources.grain), getGranaryCapacity());
       document.getElementById("wood").innerText = resources.wood;
       document.getElementById("clay").innerText = resources.clay;
       document.getElementById("iron").innerText = resources.iron;
