@@ -594,6 +594,16 @@ data.upgradeEnd = Date.now() + durationMs;
       updateTokensDisplay();
       renderBuildings();
       setInterval(updateTimers, 1000);
+      setInterval(() => {
+      floatResources.wood += production.wood / 3600;
+      floatResources.clay += production.clay / 3600;
+      floatResources.iron += production.iron / 3600;
+      floatResources.grain += production.grain / 3600;
+
+  updateResourcesDisplay();
+  saveGame();
+}, 1000);
+
     });
   </script>
 
